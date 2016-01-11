@@ -67,6 +67,8 @@ define(function(require, exports, module){
 
 		_iconDeg:0,
 
+		_direct:0,
+
 		_setTarget:function($wrapper){
 
 			$wrapper.css({position: 'relative', overflow:'hidden'});
@@ -128,7 +130,7 @@ define(function(require, exports, module){
 			this._$footIconWrap.css({bottom: -this._iconH + 'px', top: 'auto'});
 		},
 
-		_onTouchStart:function(e){
+		_onTouchStart: function(e){
 			if(this._status){console.log("正在处理中");return}
 			// 超出阈值时的起始坐标
 			this._beginY = 0;
@@ -150,7 +152,7 @@ define(function(require, exports, module){
 			this._$container.on(this._end_event, $.proxy(this._onTouchEnd, this));
 		},
 
-		_onTouchMove:function(e){
+		_onTouchMove: function(e){
 
 			var scrollTop = this._$wrapper.scrollTop();
 
@@ -158,35 +160,68 @@ define(function(require, exports, module){
 				if(!this._beginY){
 					this._beginY = this._getY(e);
 				}else{
-					 e.preventDefault();
-					
+
+					e.preventDefault();
+
+					var direct;
 					var dragY = this._getY(e) - this._beginY;
 
-					var direct = 0;
-					direct = this._getY(e) > this._beginY ? 1 : -1;
+					if(dragY > 0){
 
-					dragY = dragY * direct;
+						direct = 1;//console.log('顶端拖拽');
 
-					console.log('dragY', dragY);
-
-					if(dragY > this._config.triggerOffset){
-						this._status = direct > 0 ? this.STATUS_TRIGGER_PULLDOWN : this.STATUS_TRIGGER_PULLUP;
-
-						if(direct > 0){
-							console.log('下拉就绪')
+						if(this._getY(e) - this._beginY > this._config.triggerOffset){
+							this._status = this.STATUS_TRIGGER_PULLDOWN;
 						}else{
-							console.log('上拉就绪')
+							this._status = this.STATUS_TRIGGER_RESET;
 						}
-					}else{
-						this._status = this.STATUS_TRIGGER_RESET;
-					}
 
-					if(this._direct !== direct){
-						this._direct = direct;
-						this._renderFuncIcon(this._direct);
-					}
+					}else
+
+					if(dragY < 0){
+
+						direct = -1;//console.log('底部拖拽');
+
+						if(this._beginY - this._getY(e) > this._config.triggerOffset){
+							this._status = this.STATUS_TRIGGER_PULLUP;
+						}else{
+							this._status = this.STATUS_TRIGGER_RESET;
+						}
+					} else {return}
+
+					this._renderFuncIcon(direct);
 
 					this._dragIcon(dragY);
+
+					// e.preventDefault();
+					//
+					//var dragY = this._getY(e) - this._beginY;
+					//
+					//var direct = 0;
+					//direct = this._getY(e) > this._beginY ? 1 : -1;
+					//
+					//dragY = dragY * direct;
+					//
+					//console.log('dragY', dragY);
+					//
+					//if(dragY > this._config.triggerOffset){
+					//	this._status = direct > 0 ? this.STATUS_TRIGGER_PULLDOWN : this.STATUS_TRIGGER_PULLUP;
+					//
+					//	if(direct > 0){
+					//		console.log('下拉就绪')
+					//	}else{
+					//		console.log('上拉就绪')
+					//	}
+					//}else{
+					//	this._status = this.STATUS_TRIGGER_RESET;
+					//}
+					//
+					//if(this._direct !== direct){
+					//	this._direct = direct;
+					//	this._renderFuncIcon(this._direct);
+					//}
+					//
+					//this._dragIcon(dragY);
 				}
 			}
 
@@ -202,9 +237,7 @@ define(function(require, exports, module){
 
 			if(this._status == this.STATUS_TRIGGER_PULLDOWN){
 				this._setIconRun();
-				//setTimeout(function(){
-				//	_this._refreshData();
-				//}, 3100)
+				_this._refreshData();
 			}else if(this._status == this.STATUS_TRIGGER_PULLUP){
 				this._setIconRun();
 				this._loadMoreData();
@@ -221,13 +254,15 @@ define(function(require, exports, module){
 
 		_setIconRun: function(){
 			// 设定icon进入loading状态的不断滚动, 但有定时退出loading状态
+
 			var _this = this;
 			var loadingDuration = this._config.waiting + this._config.resetDuration;
 			var waitingRunDeg = loadingDuration * this._resetDegPerTime;
 
-			console.log('this._$funcIconWrap', this._$funcIconWrap)
+			console.log('this._$funcIconWrap', this._$funcIconWrap);
 			this._setIconPos(this._config.triggerOffset, this._$funcIconWrap);
-			this._$funcIconWrap.position();// 若加载是一瞬间的, 会没有动画效果, 需要这里调整一下
+
+			//this._$funcIconWrap.position();// 若加载是一瞬间的, 会没有动画效果, 需要这里调整一下
 
 			var runDeg = (this._iconDeg || 0) - waitingRunDeg;
 			console.log('loadingDuration',loadingDuration);
@@ -244,6 +279,7 @@ define(function(require, exports, module){
 					callback: function(){
 						_this._status = null;
 						_this._direct = null;
+						console.log('	_this._status = null;')
 					}
 				})
 			}, this._config.waiting);
@@ -349,38 +385,33 @@ define(function(require, exports, module){
 		triggerRefresh:function(){
 			this._renderFuncIcon(1);
 			this._setIconRun();
-			var _this = this;
-			setTimeout(function(){
-				_this._refreshData();
-			},1000);
+			this._refreshData();
 		},
-
-
-
-
-
-
 
 		_renderFuncIcon: function(mode){
 			// 选择当前操作的icon, mode = 1是选择顶部icon, 2是选择底部icon, 0是隐藏icon
-			if(mode === 1){console.log('选择top');
-				this._$funcIcon = this._$topIcon;
-				this._$funcIconWrap = this._$topIconWrap.css('opacity', 1);
-			} else if(mode === -1){console.log('选择foot');
-				this._$funcIcon = this._$footIcon;
-				this._$funcIconWrap = this._$footIconWrap.css('opacity', 1);
-			} else if(mode === 0){console.log('隐藏icon');
-				this._$topIconWrap.css('opacity', 0);
-				this._$footIconWrap && this._$footIconWrap.css('opacity', 0);
-				this._$funcIcon = null;
-				this._$funcIconWrap = null;
+
+			if(mode !== this._direct ){
+				this._direct = mode;
+				if(mode === 1){console.log('选择top');
+					this._$funcIcon = this._$topIcon;
+					this._$funcIconWrap = this._$topIconWrap.css('opacity', 1);
+				} else if(mode === -1){console.log('选择foot');
+					this._$funcIcon = this._$footIcon;
+					this._$funcIconWrap = this._$footIconWrap.css('opacity', 1);
+				} else if(mode === 0){console.log('隐藏icon');
+					this._$topIconWrap.css('opacity', 0);
+					this._$footIconWrap && this._$footIconWrap.css('opacity', 0);
+					this._$funcIcon = null;
+					this._$funcIconWrap = null;
+				}
 			}
 		},
 
 		_dragIcon: function(dragY){
-			//if(this._direct === 2){
-			//	dragY = -dragY;
-			//}
+			if(this._direct === -1){
+				dragY = -dragY;
+			}
 			//dragY = dragY * 0.75;
 
 			this._rotateDeg = dragY * this._dragDegPerY;
@@ -401,7 +432,6 @@ define(function(require, exports, module){
 				this._iconPosY = distance;//console.log(distance);
 
 				distance = this._direct * distance;
-				//if(this._direct < -1){distance = -distance}
 
 				posProps[this._animType] = "translate3D(0, " + distance + "px, 0)";
 				
