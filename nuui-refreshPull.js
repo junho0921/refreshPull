@@ -222,73 +222,45 @@ define(function(require, exports, module){
 		},
 
 		_setIconRun: function(){
+			// 设定icon进入loading状态的不断滚动, 但有定时退出loading状态
 			var _this = this;
-			var waitingRunDeg = this._config.waiting * this._resetDegPerTime;
+			var loadingDuration = this._config.waiting + this._config.resetDuration;
+			var waitingRunDeg = loadingDuration * this._resetDegPerTime;
 
-			//this._iconDeg = this._iconDeg || 0;
 			var runDeg = (this._iconDeg || 0) - waitingRunDeg;
-			console.log(waitingRunDeg, this._iconDeg, this._config.waiting, runDeg);
+			//console.log(waitingRunDeg, this._iconDeg, this._config.waiting, runDeg);
 
 			// css过渡旋转
-			this._setTransition(this._$funcIcon, this._config.waiting);
+			this._setTransition(this._$funcIcon, loadingDuration);
 			this._rotateIcon(runDeg, this._$funcIcon);
 
 			this._timeFunc = setTimeout(function(){
-				console.log('??_resetIcon');
+				console.log('超时, resetIcon');
 				_this._resetIcon({
 					callback: function(){
 						_this._status = null;
 						_this._direct = null;
 					}
 				})
-			}, (this._config.waiting - this._config.resetDuration));
+			}, this._config.waiting);
 		},
 
 		_resetIcon: function(options){
 			clearTimeout(this._timeFunc);
 
 			var _this = this;
-			var resetduration, resetDeg;
+			var resetduration;
 			//duration = options && options.duration;
 
 			if(this._status == this.STATUS_TRIGGER_RESET){
 				resetduration = this._iconDeg / 360 * this._circleDuration;
-				resetDeg = 0;
-
-
 				// css过渡旋转
 				this._setTransition(_this._$funcIcon, resetduration);
-				this._rotateIcon(resetDeg, this._$funcIcon);
+				this._rotateIcon(0, this._$funcIcon);
 			} else {
-				// 考虑正在滚动中的时间:
-				var resetTimePot = (new Date()).getTime();
-				var loadingDuration = (this._stopTime || resetTimePot) - resetTimePot;
-				// 计算剩余过渡时间
-				var remainDuration = this._config.waiting - loadingDuration;
-
-				console.log('_resetIcon resetTimePot = ', resetTimePot,'    loadingDuration = ',  loadingDuration);
-
+				// 不需要考虑icon的旋转问题, 因为
 				resetduration = this._config.resetDuration;
-				resetDeg = this._iconDeg - (this._config.dragRuns * 360);
-				// waiting =3000, resetDuration=1000
-				if(remainDuration < this._config.resetDuration){
-					// 剩余过渡时间少于重置时间的话, 意味着回收icon到顶部也会停止旋转
-					//this._setTransition(_this._$funcIcon, resetduration);
-					//this._rotateIcon(resetDeg, this._$funcIcon);
-				} else {
-					// 剩余过渡时间不少于重置时间的话, 意味着现在回收icon到顶部也不会停止旋转, 不处理旋转
-				}
-
 			}
-
-			//console.log('_resetIcon deg', this._iconDeg, resetDeg);
-			//console.log('_resetIcon time', resetduration);
-
-			//backwardsDuration = this._rotateDeg / this._resetDegPerTime;
-			//
-			//// 由于使用loadingAnimation, icon回滚旋转多了360度, 所以需要处理一下时间与次数
-			//var iterationCount = this._rotateDeg / (this._rotateDeg + 360);
-
 
 			// css过渡位移
 			this._setTransition(_this._$funcIconWrap, resetduration);
