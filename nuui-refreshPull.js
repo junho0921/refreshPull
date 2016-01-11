@@ -245,7 +245,7 @@ define(function(require, exports, module){
 				this._resetIcon({
 					callback: function(){
 						_this._status = null;
-						_this._direct = null;
+						_this._direct = 0;
 					}
 				});
 			}
@@ -278,7 +278,7 @@ define(function(require, exports, module){
 				_this._resetIcon({
 					callback: function(){
 						_this._status = null;
-						_this._direct = null;
+						_this._direct = 0;
 						console.log('	_this._status = null;')
 					}
 				})
@@ -370,7 +370,7 @@ define(function(require, exports, module){
 			this._resetIcon({
 				callback: function(){
 					_this._status = null;
-					_this._direct = null;
+					_this._direct = 0;
 				}
 			});
 		},
@@ -391,7 +391,8 @@ define(function(require, exports, module){
 		_renderFuncIcon: function(mode){
 			// 选择当前操作的icon, mode = 1是选择顶部icon, 2是选择底部icon, 0是隐藏icon
 
-			if(mode !== this._direct ){
+			// 从零方向到正负方向, 或从正负方向到零方向
+			if(this._direct == 0 || this._direct && (mode == 0)){
 				this._direct = mode;
 				if(mode === 1){console.log('选择top');
 					this._$funcIcon = this._$topIcon;

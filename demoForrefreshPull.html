@@ -65,9 +65,9 @@
 
 			refreshData:function(render){
 				setTimeout(function(){
+					console.log("refresh");
 					render(data);
-				}, 1000);
-				console.log("refresh");
+				}, 2000);
 			},
 
 			loadMoreData:function(render){
