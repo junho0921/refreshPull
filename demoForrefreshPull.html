@@ -55,18 +55,18 @@
 <script src="json2.js"></script>
 <script>
 	var clientH = document.documentElement.clientHeight;
-	var topH = $("#top").outerHeight();
-	console.log(clientH, topH);
 	$("#indexedList").height(clientH);
 
-	require(["./nu-refreshPull"], function(RefreshPull){
+	require(["./nuui-refreshPull"], function(RefreshPull){
 		var scroller = new RefreshPull($('#indexedList'), {
 			containerSelector:".list",
 			enablePullDown:true,
 			enablePullUp:true,
 
 			refreshData:function(render){
-				render(data);
+//				setTimeout(function(){
+					render(data);
+//				}, 1000);
 				console.log("refresh");
 			},
 
