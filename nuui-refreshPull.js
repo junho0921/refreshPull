@@ -51,11 +51,15 @@ define(function(require, exports, module){
 			enablePullUp: false
 		},
 
-		STATUS_TRIGGER_PULLDOWN:1,
+		STATUS_PULLING_DOWN:1,
 
-		STATUS_TRIGGER_PULLUP:2,
+		STATUS_TRIGGER_PULL_DOWN:2,
 
-		STATUS_TRIGGER_RESET:3,
+		STATUS_PULLING_UP:3,
+
+		STATUS_TRIGGER_PULL_UP:4,
+
+		STATUS_TRIGGER_RESET:5,
 
 		_begin_event:("ontouchstart" in document) ? "touchstart" : "mousedown",
 
@@ -136,54 +140,76 @@ define(function(require, exports, module){
 			this._beginY = 0;
 			// 滑动时重新计算container高度
 			this._containerH = this._$container.outerHeight();
+			/**/
+			this._startY = this._getY(e);
+
+			// 重新获取尺寸信息
+			this._scrollTop = this._$wrapper.scrollTop();
+			this._footerDragDistance = (this._$container.outerHeight() - this._wrapperH) - this._scrollTop;
+			/**/
 
 			// console.log("start");
 			this._$container.on(this._move_event, $.proxy(this._onTouchMove, this));
 			this._$container.on(this._end_event, $.proxy(this._onTouchEnd, this));
+
+
 		},
 
 		_onTouchMove: function(e){
 
-			var scrollTop = this._$wrapper.scrollTop();
-
-			if(scrollTop == 0 || scrollTop == this._containerH - this._wrapperH){
+			if(this._status != null){ // TODO sth to do
 				if(!this._beginY){
 					this._beginY = this._getY(e);
-				}else{
-
+				}else {
 					e.preventDefault();
 
 					var direct = 0;
 					var dragY = this._getY(e) - this._beginY;
 
-					if(dragY > 0){
+					if (this._status == this.STATUS_PULLING_DOWN) {
 
-						direct = 1;//console.log('顶端拖拽');
+						if (dragY > 0) {
 
-						if(this._getY(e) - this._beginY > this._config.triggerOffset){
-							this._status = this.STATUS_TRIGGER_PULLDOWN;
-						}else{
-							this._status = this.STATUS_TRIGGER_RESET;
+							direct = 1;//console.log('顶端拖拽');
+
+							if (this._getY(e) - this._beginY > this._config.triggerOffset) {
+								this._status = this.STATUS_TRIGGER_PULL_DOWN;
+							} else {
+								this._status = this.STATUS_TRIGGER_RESET;
+							}
+
 						}
 
-					}else
+					} else if (this._status == this.STATUS_PULLING_UP) {
 
-					if(dragY < 0){
+						if (dragY < 0) {
 
-						direct = -1;//console.log('底部拖拽');
+							direct = -1;//console.log('底部拖拽');
 
-						if(this._beginY - this._getY(e) > this._config.triggerOffset){
-							this._status = this.STATUS_TRIGGER_PULLUP;
-						}else{
-							this._status = this.STATUS_TRIGGER_RESET;
+							if (this._beginY - this._getY(e) > this._config.triggerOffset) {
+								this._status = this.STATUS_PULLING_UP;
+							} else {
+								this._status = this.STATUS_TRIGGER_RESET;
+							}
 						}
-					} else {return}
+					}
 
 					this._renderFuncIcon(direct);
 
 					this._dragIcon(dragY);
 				}
+			}else{
+				var scrollTop = this._$wrapper.scrollTop();
+
+				if(scrollTop == 0){
+					this._status = this.STATUS_PULLING_DOWN;
+				}else if(scrollTop == this._containerH - this._wrapperH){
+					this._status = this.STATUS_PULLING_UP;
+				}else{
+					this._status = null;
+				}
 			}
+
 
 		},
 
@@ -353,7 +379,7 @@ define(function(require, exports, module){
 		_renderFuncIcon: function(mode){
 			// 选择当前操作的icon, mode = 1是选择顶部icon, 2是选择底部icon, 0是隐藏icon
 			// 从零方向到正负方向, 或从正负方向到零方向
-			if(this._direct == 0 || this._direct && (mode == 0)){
+			//if(this._direct == 0 || this._direct && (mode == 0)){
 				this._direct = mode;
 				if(mode === 1){console.log('选择top');
 					this._$funcIcon = this._$topIcon;
@@ -367,7 +393,7 @@ define(function(require, exports, module){
 					this._$funcIcon = null;
 					this._$funcIconWrap = null;
 				}
-			}
+			//}
 		},
 
 		_dragIcon: function(dragY){
