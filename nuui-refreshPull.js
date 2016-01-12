@@ -137,16 +137,6 @@ define(function(require, exports, module){
 			// 滑动时重新计算container高度
 			this._containerH = this._$container.outerHeight();
 
-			// 设icon的css过渡都为0
-			if(this._config.enablePullDown) {
-				this._setTransition(this._$topIconWrap, 0);
-				this._setTransition(this._$topIcon, 0);
-			}
-			if(this._config.enablePullUp) {
-				this._setTransition(this._$footIconWrap, 0);
-				this._setTransition(this._$footIcon, 0);
-			}
-
 			// console.log("start");
 			this._$container.on(this._move_event, $.proxy(this._onTouchMove, this));
 			this._$container.on(this._end_event, $.proxy(this._onTouchEnd, this));
@@ -163,7 +153,7 @@ define(function(require, exports, module){
 
 					e.preventDefault();
 
-					var direct;
+					var direct = 0;
 					var dragY = this._getY(e) - this._beginY;
 
 					if(dragY > 0){
@@ -192,39 +182,8 @@ define(function(require, exports, module){
 					this._renderFuncIcon(direct);
 
 					this._dragIcon(dragY);
-
-					// e.preventDefault();
-					//
-					//var dragY = this._getY(e) - this._beginY;
-					//
-					//var direct = 0;
-					//direct = this._getY(e) > this._beginY ? 1 : -1;
-					//
-					//dragY = dragY * direct;
-					//
-					//console.log('dragY', dragY);
-					//
-					//if(dragY > this._config.triggerOffset){
-					//	this._status = direct > 0 ? this.STATUS_TRIGGER_PULLDOWN : this.STATUS_TRIGGER_PULLUP;
-					//
-					//	if(direct > 0){
-					//		console.log('下拉就绪')
-					//	}else{
-					//		console.log('上拉就绪')
-					//	}
-					//}else{
-					//	this._status = this.STATUS_TRIGGER_RESET;
-					//}
-					//
-					//if(this._direct !== direct){
-					//	this._direct = direct;
-					//	this._renderFuncIcon(this._direct);
-					//}
-					//
-					//this._dragIcon(dragY);
 				}
 			}
-
 
 		},
 
@@ -279,7 +238,6 @@ define(function(require, exports, module){
 					callback: function(){
 						_this._status = null;
 						_this._direct = 0;
-						console.log('	_this._status = null;')
 					}
 				})
 			}, this._config.waiting);
@@ -306,6 +264,10 @@ define(function(require, exports, module){
 			this._setIconPos(0, this._$funcIconWrap);
 
 			setTimeout(function(){
+
+				// 设icon的css过渡都为0, 表示取消动画
+				_this._setTransition(_this._$funcIconWrap, 0);
+				_this._setTransition(_this._$funcIcon, 0);
 
 				_this._rotateIcon(0, _this._$funcIcon);
 
@@ -390,7 +352,6 @@ define(function(require, exports, module){
 
 		_renderFuncIcon: function(mode){
 			// 选择当前操作的icon, mode = 1是选择顶部icon, 2是选择底部icon, 0是隐藏icon
-
 			// 从零方向到正负方向, 或从正负方向到零方向
 			if(this._direct == 0 || this._direct && (mode == 0)){
 				this._direct = mode;
@@ -412,8 +373,7 @@ define(function(require, exports, module){
 		_dragIcon: function(dragY){
 			if(this._direct === -1){
 				dragY = -dragY;
-			}
-			//dragY = dragY * 0.75;
+			}//dragY = dragY * 0.75;
 
 			this._rotateDeg = dragY * this._dragDegPerY;
 
@@ -442,8 +402,8 @@ define(function(require, exports, module){
 		
 		_rotateIcon: function(rotateDeg, $obj) {
 			// 拖拽旋转icon
-			var rotateProps = {};
-			//console.log('_rotateIcon', rotateDeg);
+			var rotateProps = {};//console.log('_rotateIcon', rotateDeg);
+
 			this._iconDeg = rotateDeg;
 
 			rotateProps[this._animType] = "rotateZ(" + rotateDeg + "deg)";
