@@ -158,55 +158,51 @@ define(function(require, exports, module){
 		_onTouchMove: function(e){
 
 			if(this._status != null){ // TODO sth to do
-				if(!this._beginY){
-					this._beginY = this._getY(e);
-				}else {
-					e.preventDefault();
 
-					var direct = 0;
-					var dragY = this._getY(e) - this._beginY;
+				e.preventDefault();
 
-					if (this._status == this.STATUS_PULLING_DOWN) {
+				var dragY = this._getY(e) - this._beginY;
 
-						if (dragY > 0) {
+				if (this._status == this.STATUS_PULLING_DOWN) {
 
-							direct = 1;//console.log('顶端拖拽');
+					if (dragY > 0) {
 
-							if (this._getY(e) - this._beginY > this._config.triggerOffset) {
-								this._status = this.STATUS_TRIGGER_PULL_DOWN;
-							} else {
-								this._status = this.STATUS_TRIGGER_RESET;
-							}
-
+						if (this._getY(e) - this._beginY > this._config.triggerOffset) {
+							this._status = this.STATUS_TRIGGER_PULL_DOWN;
+						} else {
+							this._status = this.STATUS_TRIGGER_RESET;
 						}
 
-					} else if (this._status == this.STATUS_PULLING_UP) {
-
-						if (dragY < 0) {
-
-							direct = -1;//console.log('底部拖拽');
-
-							if (this._beginY - this._getY(e) > this._config.triggerOffset) {
-								this._status = this.STATUS_PULLING_UP;
-							} else {
-								this._status = this.STATUS_TRIGGER_RESET;
-							}
-						}
 					}
 
-					this._renderFuncIcon(direct);
+				} else if (this._status == this.STATUS_PULLING_UP) {
 
-					this._dragIcon(dragY);
+					if (dragY < 0) {
+
+
+
+						if (this._beginY - this._getY(e) > this._config.triggerOffset) {
+							this._status = this.STATUS_PULLING_UP;
+						} else {
+							this._status = this.STATUS_TRIGGER_RESET;
+						}
+					}
 				}
 			}else{
 				var scrollTop = this._$wrapper.scrollTop();
+				if(!this._beginY){
+					this._beginY = this._getY(e);
+				}else {
 
-				if(scrollTop == 0){
-					this._status = this.STATUS_PULLING_DOWN;
-				}else if(scrollTop == this._containerH - this._wrapperH){
-					this._status = this.STATUS_PULLING_UP;
-				}else{
-					this._status = null;
+					var dragY = this._getY(e) - this._beginY;
+
+					if (scrollTop == 0 && dragY > 0) {
+						this._status = this.STATUS_PULLING_DOWN;
+					}else if(scrollTop == this._containerH - this._wrapperH && dragY < 0){
+						this._status = this.STATUS_PULLING_UP;
+					}else{
+						this._status = null;
+					}
 				}
 			}
 
