@@ -129,7 +129,9 @@ define(function(require, exports, module){
 		},
 
 		_onTouchStart: function(e){
-			if(this._status){console.log("正在处理中");return}
+			if(this._status){//console.log("正在处理中");
+				return
+			}
 			// 超出阈值时的起始坐标
 			this._touchBeginY = this._getY(e);
 			// 滑动时重新计算container高度
@@ -184,7 +186,7 @@ define(function(require, exports, module){
 
 		_onTouchEnd: function(){
 			var _this = this;
-			console.log('_onTouchEnd _status =', this._status);
+			//console.log('_onTouchEnd _status =', this._status);
 			this._$container.off(this._move_event);
 			this._$container.off(this._end_event);
 
@@ -324,13 +326,13 @@ define(function(require, exports, module){
 			// 选择当前操作的icon
 			if(mode !== this._mode){
 				this._mode = mode;
-				if(mode === this.STATUS_PULLING_DOWN){console.log('选择top');
+				if(mode === this.STATUS_PULLING_DOWN){//console.log('选择top');
 					this._$funcIcon = this._$topIcon;
 					this._$funcIconWrap = this._$topIconWrap.css('opacity', 1);
-				} else if(mode === this.STATUS_PULLING_UP){console.log('选择foot');
+				} else if(mode === this.STATUS_PULLING_UP){//console.log('选择foot');
 					this._$funcIcon = this._$footIcon;
 					this._$funcIconWrap = this._$footIconWrap.css('opacity', 1);
-				} else if(!mode){console.log('隐藏icon');
+				} else if(!mode){//console.log('隐藏icon');
 					this._$topIconWrap.css('opacity', 0);
 					this._$footIconWrap && this._$footIconWrap.css('opacity', 0);
 					this._$funcIcon = null;
