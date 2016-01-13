@@ -26,12 +26,11 @@ define(function(require, exports, module){
 		},
 
 		_defaultConfig : {
+			// 拖拽icon的最大距离, 也是触发加载的距离边缘
 			triggerOffset:100,
+			// loading等待的最大时间
+			waiting: 30000,
 
-			waiting: 3000,
-
-			// icon滚出的最长距离
-			loadingH: 200,
 			// 收回icon的回滚次数
 			dragRuns: 2,
 			// 收回icon的回滚时间
@@ -59,8 +58,6 @@ define(function(require, exports, module){
 
 		STATUS_TRIGGER_PULL_UP:4,
 
-		STATUS_TRIGGER_RESET:5,
-
 		_begin_event:("ontouchstart" in document) ? "touchstart" : "mousedown",
 
 		_move_event:("ontouchmove" in document) ? "touchmove" : "mousemove",
@@ -70,8 +67,6 @@ define(function(require, exports, module){
 		_status:null,
 
 		_iconDeg:0,
-
-		_direct:0,
 
 		_setTarget:function($wrapper){
 
@@ -127,7 +122,7 @@ define(function(require, exports, module){
 					)
 				);
 			}
-			this._iconH = this._$topIconWrap.outerHeight();
+			this._iconH = this._$topIconWrap.outerHeight() + 10;
 			console.log('this._iconH', this._iconH);
 			//取得高度后设icon的位置
 			this._$topIconWrap.css('top', -this._iconH + 'px');
@@ -137,96 +132,75 @@ define(function(require, exports, module){
 		_onTouchStart: function(e){
 			if(this._status){console.log("正在处理中");return}
 			// 超出阈值时的起始坐标
-			this._beginY = 0;
+			this._touchBeginY = this._getY(e);
 			// 滑动时重新计算container高度
 			this._containerH = this._$container.outerHeight();
-			/**/
-			this._startY = this._getY(e);
 
-			// 重新获取尺寸信息
-			this._scrollTop = this._$wrapper.scrollTop();
-			this._footerDragDistance = (this._$container.outerHeight() - this._wrapperH) - this._scrollTop;
-			/**/
-
-			// console.log("start");
 			this._$container.on(this._move_event, $.proxy(this._onTouchMove, this));
 			this._$container.on(this._end_event, $.proxy(this._onTouchEnd, this));
-
-
 		},
 
 		_onTouchMove: function(e){
 
-			if(this._status != null){ // TODO sth to do
-
-				e.preventDefault();
+			if(this._status != null){
 
 				var dragY = this._getY(e) - this._beginY;
 
-				if (this._status == this.STATUS_PULLING_DOWN) {
+				if ((this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_TRIGGER_PULL_DOWN) && dragY > 0) {
 
-					if (dragY > 0) {
-
-						if (this._getY(e) - this._beginY > this._config.triggerOffset) {
-							this._status = this.STATUS_TRIGGER_PULL_DOWN;
-						} else {
-							this._status = this.STATUS_TRIGGER_RESET;
-						}
-
+					if (this._getY(e) - this._beginY > this._config.triggerOffset) {
+						this._status = this.STATUS_TRIGGER_PULL_DOWN;
+					} else {
+						this._status = this.STATUS_PULLING_DOWN;
 					}
+					this._renderFuncIcon(this.STATUS_PULLING_DOWN);
+					this._dragIcon(dragY, e);
 
-				} else if (this._status == this.STATUS_PULLING_UP) {
+				} else if ((this._status == this.STATUS_PULLING_UP || this._status == this.STATUS_TRIGGER_PULL_UP) && dragY < 0) {
 
-					if (dragY < 0) {
-
-
-
-						if (this._beginY - this._getY(e) > this._config.triggerOffset) {
-							this._status = this.STATUS_PULLING_UP;
-						} else {
-							this._status = this.STATUS_TRIGGER_RESET;
-						}
+					if (this._beginY - this._getY(e) > this._config.triggerOffset) {
+						this._status = this.STATUS_TRIGGER_PULL_UP;
+					} else {
+						this._status = this.STATUS_PULLING_UP;
 					}
+					this._renderFuncIcon(this.STATUS_PULLING_UP);
+					this._dragIcon(dragY, e);
 				}
+
 			}else{
 				var scrollTop = this._$wrapper.scrollTop();
-				if(!this._beginY){
-					this._beginY = this._getY(e);
-				}else {
+				var y = this._getY(e);
+				var moveY = y - this._touchBeginY;
 
-					var dragY = this._getY(e) - this._beginY;
-
-					if (scrollTop == 0 && dragY > 0) {
-						this._status = this.STATUS_PULLING_DOWN;
-					}else if(scrollTop == this._containerH - this._wrapperH && dragY < 0){
-						this._status = this.STATUS_PULLING_UP;
-					}else{
-						this._status = null;
-					}
+				if (scrollTop == 0 && moveY > 0) {
+					this._status = this.STATUS_PULLING_DOWN;
+					this._beginY = y;
+				}else if(scrollTop == this._containerH - this._wrapperH && moveY < 0){
+					this._status = this.STATUS_PULLING_UP;
+					this._beginY = y;
+				}else{
+					this._status = null;
 				}
+
 			}
-
-
 		},
 
-		_onTouchEnd:function(e){
+		_onTouchEnd:function(){
 			var _this = this;
-
-			console.log('this._status', this._status);
+			console.log('_onTouchEnd _status =', this._status);
 			this._$container.off(this._move_event);
 			this._$container.off(this._end_event);
 
-			if(this._status == this.STATUS_TRIGGER_PULLDOWN){
+			if(this._status == this.STATUS_TRIGGER_PULL_DOWN){
 				this._setIconRun();
-				_this._refreshData();
-			}else if(this._status == this.STATUS_TRIGGER_PULLUP){
+				this._refreshData();
+			}else if(this._status == this.STATUS_TRIGGER_PULL_UP){
 				this._setIconRun();
 				this._loadMoreData();
-			}else if(this._status == this.STATUS_TRIGGER_RESET){
+			}else if(this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_PULLING_UP){
 				this._resetIcon({
 					callback: function(){
 						_this._status = null;
-						_this._direct = 0;
 					}
 				});
 			}
@@ -234,34 +208,27 @@ define(function(require, exports, module){
 		},
 
 		_setIconRun: function(){
-			// 设定icon进入loading状态的不断滚动, 但有定时退出loading状态
-
+			// 本方法是icon进入loading状态的不断滚动, 但有定时退出loading状态
 			var _this = this;
+			// icon的loading状态时间是等于等待时间加上回滚时间
 			var loadingDuration = this._config.waiting + this._config.resetDuration;
 			var waitingRunDeg = loadingDuration * this._resetDegPerTime;
-
-			console.log('this._$funcIconWrap', this._$funcIconWrap);
-			this._setIconPos(this._config.triggerOffset, this._$funcIconWrap);
-
-			//this._$funcIconWrap.position();// 若加载是一瞬间的, 会没有动画效果, 需要这里调整一下
-
 			var runDeg = (this._iconDeg || 0) - waitingRunDeg;
-			console.log('loadingDuration',loadingDuration);
-			console.log('waitingRunDeg',this._iconDeg, waitingRunDeg/360);
 
-			// css过渡旋转
+			// 先设iconWrap的位置在triggerOffset的高度
+			this._setIconPos(this._config.triggerOffset, this._$funcIconWrap);
+			//this._$funcIconWrap.position();// 若加载是一瞬间的, 会没有动画效果, 这个方法可以解决一下
+
+			// css过渡-旋转
 			this._setTransition(this._$funcIcon, loadingDuration);
 			this._rotateIcon(runDeg, this._$funcIcon);
 
 			this._timeFunc = setTimeout(function(){
-				console.log('超时, resetIcon');
-				// 如何停止ajax??
 				_this._resetIcon({
 					callback: function(){
 						_this._status = null;
-						_this._direct = 0;
 					}
-				})
+				});
 			}, this._config.waiting);
 		},
 
@@ -271,7 +238,7 @@ define(function(require, exports, module){
 			var _this = this;
 			var resetDuration;
 
-			if(this._status == this.STATUS_TRIGGER_RESET){
+			if(this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_PULLING_UP){
 				resetDuration = this._iconDeg / 360 * this._circleDuration;
 				// css过渡旋转
 				this._setTransition(_this._$funcIcon, resetDuration);
@@ -286,7 +253,6 @@ define(function(require, exports, module){
 			this._setIconPos(0, this._$funcIconWrap);
 
 			setTimeout(function(){
-
 				// 设icon的css过渡都为0, 表示取消动画
 				_this._setTransition(_this._$funcIconWrap, 0);
 				_this._setTransition(_this._$funcIcon, 0);
@@ -294,7 +260,6 @@ define(function(require, exports, module){
 				_this._rotateIcon(0, _this._$funcIcon);
 
 				_this._renderFuncIcon(0);
-
 				if(options && options.callback)options.callback();
 			}, resetDuration);
 		},
@@ -354,11 +319,108 @@ define(function(require, exports, module){
 			this._resetIcon({
 				callback: function(){
 					_this._status = null;
-					_this._direct = 0;
 				}
 			});
 		},
 
+		_renderFuncIcon: function(mode){
+			// 选择当前操作的icon
+			if(mode !== this._mode){
+				this._mode = mode;
+				if(mode === this.STATUS_PULLING_DOWN){console.log('选择top');
+					this._$funcIcon = this._$topIcon;
+					this._$funcIconWrap = this._$topIconWrap.css('opacity', 1);
+				} else if(mode === this.STATUS_PULLING_UP){console.log('选择foot');
+					this._$funcIcon = this._$footIcon;
+					this._$funcIconWrap = this._$footIconWrap.css('opacity', 1);
+				} else if(!mode){console.log('隐藏icon');
+					this._$topIconWrap.css('opacity', 0);
+					this._$footIconWrap && this._$footIconWrap.css('opacity', 0);
+					this._$funcIcon = null;
+					this._$funcIconWrap = null;
+				}
+			}
+		},
+
+		_dragIcon: function(dragY, e){
+			//dragY = dragY * 0.75;
+			e.preventDefault();
+
+			if(dragY < 0)dragY = -dragY;
+
+			this._rotateDeg = dragY * this._dragDegPerY;
+
+			this._rotateIcon(this._rotateDeg, this._$funcIcon);
+
+			dragY = dragY > this._config.triggerOffset ? this._config.triggerOffset : dragY;
+
+			this._setIconPos(dragY, this._$funcIconWrap);
+		},
+
+		_setIconPos: function(distance, $obj){
+			var posProps = {};
+
+			// 若是footIcon, 调整为反方向的位移
+			if(this._mode == this.STATUS_PULLING_UP && distance > 0){distance = -distance}
+
+			if(distance !== this._iconPosY){
+				this._iconPosY = distance;//console.log(distance);
+
+				posProps[this._animType] = "translate3D(0, " + distance + "px, 0)";
+
+				$obj.css(posProps);
+			}
+		},
+
+		_rotateIcon: function(rotateDeg, $obj) {
+			// 拖拽旋转icon
+			var rotateProps = {};//console.log('_rotateIcon', rotateDeg);
+
+			this._iconDeg = rotateDeg;
+
+			rotateProps[this._animType] = "rotateZ(" + rotateDeg + "deg)";
+
+			$obj.css(rotateProps);
+		},
+
+		_setTransition: function($obj, duration) {
+			var transition = {};
+
+			transition[this._transitionType] = this._transformType + ' ' + duration + 'ms linear';
+
+			$obj.css(transition);
+		},
+
+		_setCssProps: function() {
+			// 环境检测可用的css属性: 能否使用transition, 能否使用transform
+			var bodyStyle = document.body.style;
+			/*setProps的主要作用之一:检测可使用的前缀, 可以用来借鉴, Perspective更小众*/
+			if (bodyStyle.OTransform !== undefined) {
+				this._animType = 'OTransform';
+				this._transformType = '-o-transform';
+				this._transitionType = 'OTransition';
+			}
+			if (bodyStyle.MozTransform !== undefined) {
+				this._animType = 'MozTransform';
+				this._transformType = '-moz-transform';
+				this._transitionType = 'MozTransition';
+			}
+			if (bodyStyle.webkitTransform !== undefined) {
+				this._animType = 'webkitTransform';
+				this._transformType = '-webkit-transform';
+				this._transitionType = 'webkitTransition';
+			}
+			if (bodyStyle.msTransform !== undefined) {
+				this._animType = 'msTransform';
+				this._transformType = '-ms-transform';
+				this._transitionType = 'msTransition';
+			}
+			if (bodyStyle.transform !== undefined) {
+				this._animType = 'transform';
+				this._transformType = 'transform';
+				this._transitionType = 'transition';
+			}
+		},
 
 		/**
 		 * @desc 触发"下拉刷新"事件,一般用于首次加载数据
@@ -367,132 +429,20 @@ define(function(require, exports, module){
 		 * @instance
 		 */
 		triggerRefresh:function(){
-			this._renderFuncIcon(1);
+			this._renderFuncIcon(this.STATUS_PULLING_DOWN);
 			this._setIconRun();
 			this._refreshData();
 		},
 
-		_renderFuncIcon: function(mode){
-			// 选择当前操作的icon, mode = 1是选择顶部icon, 2是选择底部icon, 0是隐藏icon
-			// 从零方向到正负方向, 或从正负方向到零方向
-			//if(this._direct == 0 || this._direct && (mode == 0)){
-				this._direct = mode;
-				if(mode === 1){console.log('选择top');
-					this._$funcIcon = this._$topIcon;
-					this._$funcIconWrap = this._$topIconWrap.css('opacity', 1);
-				} else if(mode === -1){console.log('选择foot');
-					this._$funcIcon = this._$footIcon;
-					this._$funcIconWrap = this._$footIconWrap.css('opacity', 1);
-				} else if(mode === 0){console.log('隐藏icon');
-					this._$topIconWrap.css('opacity', 0);
-					this._$footIconWrap && this._$footIconWrap.css('opacity', 0);
-					this._$funcIcon = null;
-					this._$funcIconWrap = null;
-				}
-			//}
+		/**
+		 * @desc 触发"退出加载状态"事件,一般用于同步服务器失败的回调方法里
+		 * @memberof Nuui.Scroll
+		 * @func triggerHide
+		 * @instance
+		 */
+		triggerHide: function(){
+			this._refresh();
 		},
-
-		_dragIcon: function(dragY){
-			if(this._direct === -1){
-				dragY = -dragY;
-			}//dragY = dragY * 0.75;
-
-			this._rotateDeg = dragY * this._dragDegPerY;
-
-			this._rotateIcon(this._rotateDeg, this._$funcIcon);
-
-			this._setIconPos(dragY, this._$funcIconWrap);
-		},
-
-		_setIconPos: function(distance, $obj){
-			// 初始化定位, 拖拽定位
-			// 区别在于有没有_direct属性 // 因为_setIconPos运用的场景比较多, 所以对象$obj不能默认是this._$funcIconWrap
-			distance = distance > this._config.triggerOffset ? this._config.triggerOffset : distance;
-
-			var posProps = {};
-
-			if(distance !== this._iconPosY){
-				this._iconPosY = distance;//console.log(distance);
-
-				distance = this._direct * distance;
-
-				posProps[this._animType] = "translate3D(0, " + distance + "px, 0)";
-				
-				$obj.css(posProps);
-			}
-		},
-		
-		_rotateIcon: function(rotateDeg, $obj) {
-			// 拖拽旋转icon
-			var rotateProps = {};//console.log('_rotateIcon', rotateDeg);
-
-			this._iconDeg = rotateDeg;
-
-			rotateProps[this._animType] = "rotateZ(" + rotateDeg + "deg)";
-			$obj.css(rotateProps);
-		},
-		
-		_setTransition: function($obj, duration) {
-			var transition = {};
-			
-			transition[this._transitionType] = this._transformType + ' ' + duration + 'ms linear';
-			
-			$obj.css(transition);
-		},
-		
-		_setCssProps: function() {
-			// 环境检测可用的css属性: 能否使用transition, 能否使用transform
-			var bodyStyle = document.body.style;
-
-			if (bodyStyle.WebkitTransition !== undefined ||
-				bodyStyle.MozTransition !== undefined ||
-				bodyStyle.msTransition !== undefined) {
-				//if (this._staticConfig._useCSS === true) { //_config是提供用户的选择, 但要使用的话, 需检测环境能否
-				this._cssTransitions = true;
-				//}
-			}
-			/*setProps的主要作用之一:检测可使用的前缀, 可以用来借鉴, Perspective更小众*/
-			if (bodyStyle.OTransform !== undefined) {
-				this._animType = 'OTransform';
-				this._transformType = '-o-transform';
-				this._transitionType = 'OTransition';
-				this._animationType = '-o-animation';
-				if (bodyStyle.perspectiveProperty === undefined && bodyStyle.webkitPerspective === undefined) this._animType = false;
-			}
-			if (bodyStyle.MozTransform !== undefined) {
-				this._animType = 'MozTransform';
-				this._transformType = '-moz-transform';
-				this._transitionType = 'MozTransition';
-				this._animationType = '-moz-animation';
-				if (bodyStyle.perspectiveProperty === undefined && bodyStyle.MozPerspective === undefined) this._animType = false;
-			}
-			if (bodyStyle.webkitTransform !== undefined) {
-				this._animType = 'webkitTransform';
-				this._transformType = '-webkit-transform';
-				this._transitionType = 'webkitTransition';
-				this._animationType = '-webkit-animation';
-				if (bodyStyle.perspectiveProperty === undefined && bodyStyle.webkitPerspective === undefined) this._animType = false;
-			}
-			if (bodyStyle.msTransform !== undefined) {
-				this._animType = 'msTransform';
-				this._transformType = '-ms-transform';
-				this._transitionType = 'msTransition';
-				this._animationType = '-ms-animation';
-				if (bodyStyle.msTransform === undefined) this._animType = false;
-			}
-			if (bodyStyle.transform !== undefined && this._animType !== false) {
-				this._animType = 'transform';
-				this._transformType = 'transform';
-				this._transitionType = 'transition';
-				this._animationType = 'animation';
-			}
-			this._transformsEnabled =
-				//this._staticConfig._useTransform &&
-				(this._animType !== null && this._animType !== false);
-			//this._transformsEnabled = false;// 测试用
-			//this._cssTransitions = false;// 测试用
-		},
-
 
 		nextFrame : function() {
 			return window.requestAnimationFrame ||

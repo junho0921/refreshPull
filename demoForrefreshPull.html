@@ -58,21 +58,33 @@
 	$("#indexedList").height(clientH);
 
 	require(["./nuui-refreshPull"], function(RefreshPull){
+		var timeTools;
+
 		var scroller = new RefreshPull($('#indexedList'), {
 			containerSelector:".list",
 			enablePullDown:true,
 			enablePullUp:true,
 
 			refreshData:function(render){
-				setTimeout(function(){
+				timeTools = setTimeout(function(){
+					console.log("timeTools");
 					console.log("refresh");
 					render(data);
-				}, 2000);
+				}, 3000);
 			},
 
 			loadMoreData:function(render){
-				render(data2);
-				console.log("loadMore");
+				timeTools = setTimeout(function(){
+					console.log("timeTools");
+					console.log("loadMore");
+					render(data2);
+				}, 3500);
+
+				setTimeout(function(){
+					console.log("超时");
+					clearTimeout(timeTools);
+					scroller.triggerHide();
+				}, 2100);
 			},
 
 			dataRenderer:function(data){
