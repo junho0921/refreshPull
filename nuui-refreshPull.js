@@ -6,7 +6,7 @@ define(function(require, exports, module){
 
 	RefreshPull.prototype = {
 
-		initialize:function($wrapper, config){
+		initialize: function($wrapper, config){
 			this._config = $.extend({}, this._defaultConfig, config);
 
 			// 设css的兼容属性
@@ -25,9 +25,9 @@ define(function(require, exports, module){
 			this._$container.on(this._begin_event, $.proxy(this._onTouchStart, this));
 		},
 
-		_defaultConfig : {
+		_defaultConfig: {
 			// 拖拽icon的最大距离, 也是触发加载的距离边缘
-			triggerOffset:100,
+			triggerOffset: 100,
 			// loading等待的最大时间
 			waiting: 30000,
 
@@ -40,37 +40,37 @@ define(function(require, exports, module){
 				return $('<img src="./img/iconfont-loading.png">');
 			},
 			// 公开方法: 重新获取数据
-			refreshData:null,
+			refreshData: null,
 			// 公开方法: 加载更多数据
-			loadMoreData:null,
+			loadMoreData: null,
 			// 公开方法: 模板
-			dataRenderer:null,
+			dataRenderer: null,
 			// 选择向上拉向下拉的功能
 			enablePullDown: false,
 			enablePullUp: false
 		},
 
-		STATUS_PULLING_DOWN:1,
+		STATUS_PULLING_DOWN: 1,
 
-		STATUS_TRIGGER_PULL_DOWN:2,
+		STATUS_TRIGGER_PULL_DOWN: 2,
 
-		STATUS_PULLING_UP:3,
+		STATUS_PULLING_UP: 3,
 
-		STATUS_TRIGGER_PULL_UP:4,
+		STATUS_TRIGGER_PULL_UP: 4,
 
-		_begin_event:("ontouchstart" in document) ? "touchstart" : "mousedown",
+		_begin_event: ("ontouchstart" in document) ? "touchstart" : "mousedown",
 
-		_move_event:("ontouchmove" in document) ? "touchmove" : "mousemove",
+		_move_event: ("ontouchmove" in document) ? "touchmove" : "mousemove",
 
-		_end_event:("ontouchend" in document) ? "touchend" : "mouseup",
+		_end_event: ("ontouchend" in document) ? "touchend" : "mouseup",
 
-		_status:null,
+		_status: null,
 
-		_iconDeg:0,
+		_iconDeg: 0,
 
-		_setTarget:function($wrapper){
+		_setTarget: function($wrapper){
 
-			$wrapper.css({position: 'relative', overflow:'hidden'});
+			$wrapper.css({position: 'relative', overflow: 'hidden'});
 
 			this._wrapperH = $wrapper.outerHeight();
 
@@ -85,8 +85,8 @@ define(function(require, exports, module){
 
 			this._$wrapper = this._$container.parent()
 				.css({
-					"overflow-y":"auto",
-					"-webkit-overflow-scrolling":"touch",
+					"overflow-y": "auto",
+					"-webkit-overflow-scrolling": "touch",
 					height: this._wrapperH
 				});
 		},
@@ -103,7 +103,7 @@ define(function(require, exports, module){
 		},
 
 		_buildIcon: function(){
-			var iconCss = {position: 'absolute', 'z-index':999, opacity:0};
+			var iconCss = {position: 'absolute', 'z-index': 999, opacity: 0};
 			this._$wrapper
 				.before(
 				this._$topIconWrap = $('<div class="nu-refreshPull PullDown">')
@@ -113,7 +113,7 @@ define(function(require, exports, module){
 				)
 			);
 
-			if(this._config.enablePullUp) {
+			if(this._config.enablePullUp){
 				this._$wrapper.after(
 					this._$footIconWrap = $('<div class="nu-refreshPull PullUp">')
 						.css(iconCss)
@@ -122,11 +122,10 @@ define(function(require, exports, module){
 					)
 				);
 			}
-			this._iconH = this._$topIconWrap.outerHeight() + 10;
-			console.log('this._iconH', this._iconH);
+			var iconH = this._$topIconWrap.outerHeight() * 1.1;
 			//取得高度后设icon的位置
-			this._$topIconWrap.css('top', -this._iconH + 'px');
-			this._$footIconWrap.css({bottom: -this._iconH + 'px', top: 'auto'});
+			this._$topIconWrap.css({top: 'auto', bottom: -iconH + 'px'});
+			this._$footIconWrap.css({bottom: -iconH + 'px', top: 'auto'});
 		},
 
 		_onTouchStart: function(e){
@@ -146,9 +145,9 @@ define(function(require, exports, module){
 
 				var dragY = this._getY(e) - this._beginY;
 
-				if ((this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_TRIGGER_PULL_DOWN) && dragY > 0) {
+				if ((this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_TRIGGER_PULL_DOWN) && dragY > 0){
 
-					if (this._getY(e) - this._beginY > this._config.triggerOffset) {
+					if (this._getY(e) - this._beginY > this._config.triggerOffset){
 						this._status = this.STATUS_TRIGGER_PULL_DOWN;
 					} else {
 						this._status = this.STATUS_PULLING_DOWN;
@@ -156,9 +155,9 @@ define(function(require, exports, module){
 					this._renderFuncIcon(this.STATUS_PULLING_DOWN);
 					this._dragIcon(dragY, e);
 
-				} else if ((this._status == this.STATUS_PULLING_UP || this._status == this.STATUS_TRIGGER_PULL_UP) && dragY < 0) {
+				} else if ((this._status == this.STATUS_PULLING_UP || this._status == this.STATUS_TRIGGER_PULL_UP) && dragY < 0){
 
-					if (this._beginY - this._getY(e) > this._config.triggerOffset) {
+					if (this._beginY - this._getY(e) > this._config.triggerOffset){
 						this._status = this.STATUS_TRIGGER_PULL_UP;
 					} else {
 						this._status = this.STATUS_PULLING_UP;
@@ -166,13 +165,12 @@ define(function(require, exports, module){
 					this._renderFuncIcon(this.STATUS_PULLING_UP);
 					this._dragIcon(dragY, e);
 				}
-
 			}else{
 				var scrollTop = this._$wrapper.scrollTop();
 				var y = this._getY(e);
 				var moveY = y - this._touchBeginY;
 
-				if (scrollTop == 0 && moveY > 0) {
+				if (scrollTop == 0 && moveY > 0){
 					this._status = this.STATUS_PULLING_DOWN;
 					this._beginY = y;
 				}else if(scrollTop == this._containerH - this._wrapperH && moveY < 0){
@@ -181,11 +179,10 @@ define(function(require, exports, module){
 				}else{
 					this._status = null;
 				}
-
 			}
 		},
 
-		_onTouchEnd:function(){
+		_onTouchEnd: function(){
 			var _this = this;
 			console.log('_onTouchEnd _status =', this._status);
 			this._$container.off(this._move_event);
@@ -264,47 +261,47 @@ define(function(require, exports, module){
 			}, resetDuration);
 		},
 
-		_getY:function(e){
+		_getY: function(e){
 			var e = e.originalEvent || e;
 			return ("changedTouches" in e) ? e.changedTouches[0].pageY : e.pageY;
 		},
 
-		_refreshData:function(){
+		_refreshData: function(){
 			this._config.refreshData($.proxy(this._refreshRender, this));
 		},
 
-		_loadMoreData:function(){
+		_loadMoreData: function(){
 			this._config.loadMoreData($.proxy(this._loadMoreRender, this));
 		},
 
-		_refreshRender:function(datas){
+		_refreshRender: function(datas){
 			this._clearItems();
 			this._appendItems(datas);
 		},
 
-		_loadMoreRender:function(datas){
+		_loadMoreRender: function(datas){
 			this._appendItems(datas);
 		},
 
-		_clearItems:function(){
+		_clearItems: function(){
 			this._$container.empty();
 			this._items = [];
 		},
 
-		_appendItem:function(data){
+		_appendItem: function(data){
 			var item = this._config.dataRenderer(data);
 			this._items.push(item);
 			item.appendTo(this._$container);
 		},
 
-		_appendItems:function(datas){
+		_appendItems: function(datas){
 			for(var i = 0; i < datas.length; i++){
 				this._appendItem(datas[i]);
 			}
 			this._refresh();
 		},
 
-		_refresh:function(){
+		_refresh: function(){
 			var _this = this;
 			if(this._items.length == 0){
 				this._$container.append(
@@ -372,7 +369,7 @@ define(function(require, exports, module){
 			}
 		},
 
-		_rotateIcon: function(rotateDeg, $obj) {
+		_rotateIcon: function(rotateDeg, $obj){
 			// 拖拽旋转icon
 			var rotateProps = {};//console.log('_rotateIcon', rotateDeg);
 
@@ -383,7 +380,7 @@ define(function(require, exports, module){
 			$obj.css(rotateProps);
 		},
 
-		_setTransition: function($obj, duration) {
+		_setTransition: function($obj, duration){
 			var transition = {};
 
 			transition[this._transitionType] = this._transformType + ' ' + duration + 'ms linear';
@@ -391,31 +388,31 @@ define(function(require, exports, module){
 			$obj.css(transition);
 		},
 
-		_setCssProps: function() {
+		_setCssProps: function(){
 			// 环境检测可用的css属性: 能否使用transition, 能否使用transform
 			var bodyStyle = document.body.style;
-			/*setProps的主要作用之一:检测可使用的前缀, 可以用来借鉴, Perspective更小众*/
-			if (bodyStyle.OTransform !== undefined) {
+			/*setProps的主要作用之一: 检测可使用的前缀, 可以用来借鉴, Perspective更小众*/
+			if (bodyStyle.OTransform !== undefined){
 				this._animType = 'OTransform';
 				this._transformType = '-o-transform';
 				this._transitionType = 'OTransition';
 			}
-			if (bodyStyle.MozTransform !== undefined) {
+			if (bodyStyle.MozTransform !== undefined){
 				this._animType = 'MozTransform';
 				this._transformType = '-moz-transform';
 				this._transitionType = 'MozTransition';
 			}
-			if (bodyStyle.webkitTransform !== undefined) {
+			if (bodyStyle.webkitTransform !== undefined){
 				this._animType = 'webkitTransform';
 				this._transformType = '-webkit-transform';
 				this._transitionType = 'webkitTransition';
 			}
-			if (bodyStyle.msTransform !== undefined) {
+			if (bodyStyle.msTransform !== undefined){
 				this._animType = 'msTransform';
 				this._transformType = '-ms-transform';
 				this._transitionType = 'msTransition';
 			}
-			if (bodyStyle.transform !== undefined) {
+			if (bodyStyle.transform !== undefined){
 				this._animType = 'transform';
 				this._transformType = 'transform';
 				this._transitionType = 'transition';
@@ -428,7 +425,7 @@ define(function(require, exports, module){
 		 * @func triggerRefresh
 		 * @instance
 		 */
-		triggerRefresh:function(){
+		triggerRefresh: function(){
 			this._renderFuncIcon(this.STATUS_PULLING_DOWN);
 			this._setIconRun();
 			this._refreshData();
@@ -444,13 +441,13 @@ define(function(require, exports, module){
 			this._refresh();
 		},
 
-		nextFrame : function() {
+		nextFrame: function(){
 			return window.requestAnimationFrame ||
 				window.webkitRequestAnimationFrame ||
 				window.mozRequestAnimationFrame ||
 				window.oRequestAnimationFrame ||
 				window.msRequestAnimationFrame ||
-				function(callback) { return setTimeout(callback, 1); };
+				function(callback){ return setTimeout(callback, 1); };
 		}
 
 	}
