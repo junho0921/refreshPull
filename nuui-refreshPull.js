@@ -124,7 +124,7 @@ define(function(require, exports, module){
 			}
 			var iconH = this._$topIconWrap.outerHeight() * 1.1;
 			//取得高度后设icon的位置
-			this._$topIconWrap.css({top: 'auto', bottom: -iconH + 'px'});
+			this._$topIconWrap.css({bottom: 'auto', top: -iconH + 'px'});
 			this._$footIconWrap.css({bottom: -iconH + 'px', top: 'auto'});
 		},
 
@@ -133,7 +133,7 @@ define(function(require, exports, module){
 			// 超出阈值时的起始坐标
 			this._touchBeginY = this._getY(e);
 			// 滑动时重新计算container高度
-			this._containerH = this._$container.outerHeight();
+			this._maxScrollH = this._$wrapper[0].scrollHeight - this._$wrapper[0].clientHeight;
 
 			this._$container.on(this._move_event, $.proxy(this._onTouchMove, this));
 			this._$container.on(this._end_event, $.proxy(this._onTouchEnd, this));
@@ -173,7 +173,7 @@ define(function(require, exports, module){
 				if (scrollTop == 0 && moveY > 0){
 					this._status = this.STATUS_PULLING_DOWN;
 					this._beginY = y;
-				}else if(scrollTop == this._containerH - this._wrapperH && moveY < 0){
+				}else if(Math.abs(this._maxScrollH - scrollTop) <= 1 && moveY < 0){
 					this._status = this.STATUS_PULLING_UP;
 					this._beginY = y;
 				}else{
@@ -391,7 +391,6 @@ define(function(require, exports, module){
 		_setCssProps: function(){
 			// 环境检测可用的css属性: 能否使用transition, 能否使用transform
 			var bodyStyle = document.body.style;
-			/*setProps的主要作用之一: 检测可使用的前缀, 可以用来借鉴, Perspective更小众*/
 			if (bodyStyle.OTransform !== undefined){
 				this._animType = 'OTransform';
 				this._transformType = '-o-transform';
