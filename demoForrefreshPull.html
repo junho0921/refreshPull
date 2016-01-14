@@ -3,64 +3,58 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no">
-	<title>Document</title>
+	<title>refreshPull Demo</title>
 	<style>
 		html{font-size: 100px}
 		*{margin:0; padding:0}
 		body{
-			font-size: 32px;
+			font-size: 16px;
 		}
-
-		#top{
-			background-color: #EEE;
-		}
-
-
 		#indexedList {
-			height:100%
+			border:10px solid lightgoldenrodyellow;
+			/*padding:60px 0;*/
+			background: lightcyan;
 		}
-
-		ul.list li{
-			border: 1px solid #CCC;
-
+		.ui-view-cell{
+			line-height: 30px;
+			font-size: 20px;
+			padding-left: 20px;
+			border-bottom: 1px solid lightgrey;
+			background: lightblue;
 		}
-
-
+		/*for nu-refreshPull start*/
 		.nu-refreshPull{
 			position: absolute;
 			top:0;
-			left: 1.5rem;
+			left: 45vw;
 		}
 		.nu-refreshPull img{
-			width: 0.3rem;
-			height: 0.3rem;
+			width: 10vw;
+			height: 10vw;
 		}
-
-
-
+		/*for nu-refreshPull end*/
 	</style>
 </head>
 <body>
 
-<div class="container" id="indexedList" style="">
-	<ul class="list">
-	</ul>
+<div style="height:30vh;"></div>
+<div class="container" id="indexedList" style="height:60vh;">
+	<div class="list"></div>
 </div>
-
+<!--基库-->
 <script src="jquery.js"></script>
 <script src="require.js"></script>
-
 <!--报文-->
 <script src="json1.js"></script>
 <script src="json2.js"></script>
+<!--执行-->
 <script>
-	var clientH = document.documentElement.clientHeight;
-	$("#indexedList").height(clientH);
 
-	require(["./nuui-refreshPull"], function(RefreshPull){
+//	require(["./nuui-refreshPull"], function(RefreshPull){
+	require(["./nuui-refreshPull-modify"], function(RefreshPull){
 		var timeTools;
 
-		var scroller = new RefreshPull($('#indexedList'), {
+		var scroller = new RefreshPull($('#indexedList')[0], {
 			containerSelector:".list",
 			enablePullDown:true,
 			enablePullUp:true,
@@ -70,7 +64,7 @@
 					console.log("timeTools");
 					console.log("refresh");
 					render(data);
-				}, 3000);
+				}, 1000);
 			},
 
 			loadMoreData:function(render){
@@ -78,25 +72,27 @@
 					console.log("timeTools");
 					console.log("loadMore");
 					render(data2);
-				}, 3500);
+				}, 1000);
 
-				setTimeout(function(){
-					console.log("超时");
-					clearTimeout(timeTools);
-					scroller.triggerHide();
-				}, 2100);
+//				setTimeout(function(){
+//					console.log("超时");
+//					clearTimeout(timeTools);
+//					scroller.triggerHide();
+//				}, 2100);
 			},
 
 			dataRenderer:function(data){
-				return $("<li>" + data.name + "</li>");
+				var content = [
+					"<ul class='ui-table-view'>",
+					"<li class='ui-view-cell pro-tit'><span>" + data.name + "<b>" + data.spell + "</b></span>",
+					"</li>",
+					"</ul>"
+				].join("");
+				return $(content);
 			}
 		});
 		scroller.triggerRefresh();
-
 	});
-
-
 </script>
-
 </body>
 </html>

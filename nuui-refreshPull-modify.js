@@ -1,4 +1,5 @@
 define(function(require, exports, module){
+
 	var RefreshPull = module.exports = function(wrapper, config){
 		this.initialize(wrapper, config);
 	};
@@ -14,11 +15,11 @@ define(function(require, exports, module){
 			// 设定容器
 			this._setTarget($(wrapper), config);
 
-			// 生成icon
-			this._buildIcon();
-
 			// 根据用户的设定来计算icon拖拽时的滚动速度等等
 			this._calcRuns();
+
+			// 生成icon
+			this._buildIcon();
 
 			// 绑定事件
 			this._$container.on(this._begin_event, $.proxy(this._onTouchStart, this));
@@ -31,9 +32,9 @@ define(function(require, exports, module){
 			waiting: 30000,
 
 			// 收回icon的回滚次数
-			resetRuns: 2,
+			dragRuns: 2,
 			// 收回icon的回滚时间
-			resetDuration: 1000,
+			resetDuration: 2000,
 			// icon内容
 			renderer: function(){
 				return $('<img src="./img/iconfont-loading.png">');
@@ -45,8 +46,8 @@ define(function(require, exports, module){
 			// 公开方法: 模板
 			dataRenderer: null,
 			// 选择向上拉向下拉的功能
-			//enablePullDown: true,
-			//enablePullUp: true
+			enablePullDown: false,
+			enablePullUp: false
 		},
 
 		STATUS_PULLING_DOWN: 1,
@@ -92,10 +93,10 @@ define(function(require, exports, module){
 
 		_calcRuns: function(){
 			// icon滚一圈所用时间
-			this._circleDuration = this._config.resetDuration / this._config.resetRuns;
+			this._circleDuration = this._config.resetDuration / this._config.dragRuns;
 
 			// icon每滚1deg所变化的高度
-			this._dragDegPerY = (this._config.resetRuns * 360) / this._config.triggerOffset;
+			this._dragDegPerY = (this._config.dragRuns * 360) / this._config.triggerOffset;
 
 			// icon每滚1deg所过渡的时间
 			this._resetDegPerTime = 360 / this._circleDuration;
@@ -123,63 +124,36 @@ define(function(require, exports, module){
 			}
 			var iconH = this._$topIconWrap.outerHeight() * 1.1;
 			//取得高度后设icon的位置
-			this._$topIconWrap.css({top: -iconH + 'px', bottom: 'auto'});
-			this._$footIconWrap.css({top: 'auto', bottom: -iconH + 'px'});
+			this._$topIconWrap.css({bottom: 'auto', top: -iconH + 'px'});
+			this._$footIconWrap.css({bottom: -iconH + 'px', top: 'auto'});
 		},
 
 		_onTouchStart: function(e){
 			if(this._status){//console.log("正在处理中");
 				return
 			}
+			this._startScrollTop = this._$wrapper.scrollTop();
 			// 超出阈值时的起始坐标
 			this._touchBeginY = this._getY(e);
 			// 滑动时重新计算container高度
-			this._maxScrollH = this._$wrapper[0].scrollHeight - this._$wrapper[0].clientHeight;
+			this._footerDragDistance = this._$wrapper[0].scrollHeight - this._$wrapper[0].clientHeight - this._startScrollTop;
 
 			this._$container.on(this._move_event, $.proxy(this._onTouchMove, this));
 			this._$container.on(this._end_event, $.proxy(this._onTouchEnd, this));
 		},
 
 		_onTouchMove: function(e){
+			var moveY = this._getY(e) - this._touchBeginY;
+			var pullDownY = moveY - this._startScrollTop;
+			var pullUpY = -moveY - this._footerDragDistance;// 最大_scrollTop减去当前的scrollTop值, 但滚动超过这个距离就开始事件!
 
-			if(this._status != null){
-
-				var dragY = this._getY(e) - this._beginY;
-
-				if ((this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_TRIGGER_PULL_DOWN) && dragY > 0){
-
-					if (this._getY(e) - this._beginY > this._config.triggerOffset){
-						this._status = this.STATUS_TRIGGER_PULL_DOWN;
-					} else {
-						this._status = this.STATUS_PULLING_DOWN;
-					}
-					this._renderFuncIcon(this.STATUS_PULLING_DOWN);
-					this._dragIcon(dragY, e);
-
-				} else if ((this._status == this.STATUS_PULLING_UP || this._status == this.STATUS_TRIGGER_PULL_UP) && dragY < 0){
-
-					if (this._beginY - this._getY(e) > this._config.triggerOffset){
-						this._status = this.STATUS_TRIGGER_PULL_UP;
-					} else {
-						this._status = this.STATUS_PULLING_UP;
-					}
-					this._renderFuncIcon(this.STATUS_PULLING_UP);
-					this._dragIcon(dragY, e);
-				}
-			}else{
-				var scrollTop = this._$wrapper.scrollTop();
-				var y = this._getY(e);
-				var moveY = y - this._touchBeginY;
-
-				if (scrollTop == 0 && moveY > 0){
-					this._status = this.STATUS_PULLING_DOWN;
-					this._beginY = y;
-				}else if(Math.abs(this._maxScrollH - scrollTop) <= 1 && moveY < 0){
-					this._status = this.STATUS_PULLING_UP;
-					this._beginY = y;
-				}else{
-					this._status = null;
-				}
+			if(pullDownY > 0) {//console.log('pullDownY');
+				this._status = pullDownY > this._config.triggerOffset ? this.STATUS_TRIGGER_PULL_DOWN : this.STATUS_PULLING_DOWN;
+				this._dragIcon(pullDownY, e, this.STATUS_PULLING_DOWN);
+			}
+			if(pullUpY > 0) {//console.log('pullUpY');
+				this._status = pullUpY > this._config.triggerOffset ? this.STATUS_TRIGGER_PULL_UP : this.STATUS_PULLING_UP;
+				this._dragIcon(pullUpY, e, this.STATUS_PULLING_UP);
 			}
 		},
 
@@ -246,6 +220,7 @@ define(function(require, exports, module){
 				resetDuration = this._config.resetDuration;
 			}
 
+			console.log('resetDuration', resetDuration);
 			// css过渡位移
 			this._setTransition(_this._$funcIconWrap, resetDuration);
 			this._setIconPos(0, this._$funcIconWrap);
@@ -340,8 +315,10 @@ define(function(require, exports, module){
 			}
 		},
 
-		_dragIcon: function(dragY, e){
+		_dragIcon: function(dragY, e, status){
 			//dragY = dragY * 0.75;
+			this._renderFuncIcon(status);
+
 			e.preventDefault();
 
 			if(dragY < 0)dragY = -dragY;
@@ -371,7 +348,7 @@ define(function(require, exports, module){
 		},
 
 		_rotateIcon: function(rotateDeg, $obj){
-			// 旋转icon
+			// 拖拽旋转icon
 			var rotateProps = {};//console.log('_rotateIcon', rotateDeg);
 
 			this._iconDeg = rotateDeg;
@@ -440,6 +417,16 @@ define(function(require, exports, module){
 		 */
 		triggerHide: function(){
 			this._refresh();
+		},
+
+		nextFrame: function(){
+			return window.requestAnimationFrame ||
+				window.webkitRequestAnimationFrame ||
+				window.mozRequestAnimationFrame ||
+				window.oRequestAnimationFrame ||
+				window.msRequestAnimationFrame ||
+				function(callback){ return setTimeout(callback, 1); };
 		}
+
 	}
 });
