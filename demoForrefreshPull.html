@@ -43,6 +43,7 @@
 </div>
 <!--基库-->
 <script src="jquery.js"></script>
+<script src="cssProp.js"></script>
 <script src="require.js"></script>
 <!--报文-->
 <script src="json1.js"></script>
@@ -52,12 +53,12 @@
 
 //	require(["./nuui-refreshPull"], function(RefreshPull){
 	require(["./nuui-refreshPull-modify"], function(RefreshPull){
+
+
 		var timeTools;
 
 		var scroller = new RefreshPull($('#indexedList')[0], {
 			containerSelector:".list",
-			enablePullDown:true,
-			enablePullUp:true,
 
 			refreshData:function(render){
 				timeTools = setTimeout(function(){
