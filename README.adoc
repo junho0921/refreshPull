@@ -16,10 +16,11 @@
 
 === 具体改动操作
 
-. delete 变量_$funcIconWrap// okay
-.. 删除 _$topIconWrap, _$footIconWrap // okay
-. 删除方法_setIconPos // okay
-. 把raf, transition等等的外包给cssPropJs // okay
-.. 最后处理_setCssProps的外包 // okay
-. _dragIcon的奇怪命名, this._draggingY本来就应该有正负
-. 改变了_setIconRun方法, 使用raf不断累减icon的角度来实现滚动, 控制滚动速度的方法是监听时间变化, 与配置的滚动速度来设icon角度// okay
+****
+.2016-05
+. delete 变量`_$funcIconWrap`, `_$topIconWrap`, `_$footIconWrap`, 因为之前的没有理清效果, 给icon添加多余的外框做效果
+. 删除方法`_setIconPos`
+. 把`raf, transition, setCssProps`等等的外包给cssProp
+. `_dragIcon`的奇怪命名, this._draggingY本来就应该有正负
+. 改变了`_setIconRun`方法, 使用`raf`不断累减icon的角度来实现滚动, 控制滚动速度的方法是监听时间变化, 与配置的滚动速度来设icon角度
+****
