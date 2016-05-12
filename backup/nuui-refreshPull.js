@@ -36,7 +36,7 @@ define(function(require, exports, module){
 			resetDuration: 1000,
 			// icon内容
 			renderer: function(){
-				return $('<img src="./img/iconfont-loading.png">');
+				return $('<img src="../img/iconfont-loading.png">');
 			},
 			// 公开方法: 重新获取数据
 			refreshData: null,

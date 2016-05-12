@@ -1,0 +1,25 @@
+= refreshPull
+
+== 功能
+
+模拟微信朋友圈的上下拖拽更新的滚动圈圈
+
+== 依赖库
+
+`jQuery`, `cssProp`
+
+== 改动历史
+
+=== 改动范围
+
+取消作用wrap, 只作用icon, 不能修改DOM结构, 而且取消上拉的icon效果变为模拟scrollTouch
+
+=== 具体改动操作
+
+. delete 变量_$funcIconWrap// okay
+.. 删除 _$topIconWrap, _$footIconWrap // okay
+. 删除方法_setIconPos // okay
+. 把raf, transition等等的外包给cssPropJs // okay
+.. 最后处理_setCssProps的外包 // okay
+. _dragIcon的奇怪命名, this._draggingY本来就应该有正负
+. 改变了_setIconRun方法, 使用raf不断累减icon的角度来实现滚动, 控制滚动速度的方法是监听时间变化, 与配置的滚动速度来设icon角度// okay

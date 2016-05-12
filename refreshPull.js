@@ -1,16 +1,7 @@
 define(function (require, exports, module) {
-	/*
-	* 改动范围:
-	* 取消作用wrap, 只作用icon, 不能修改DOM结构, 而且取消上拉的icon效果变为模拟scrollTouch
-	* 具体改动操作;
-	* 1, delete 变量_$funcIconWrap// okay
-	* 删除 _$topIconWrap, _$footIconWrap // okay
-	 * 2, 删除方法_setIconPos // okay
-	 * 4, 把raf, transition等等的外包给cssPropJs // okay
-	 *      4-1, 最后处理_setCssProps的外包 // okay
-	 * 5, _dragIcon的奇怪命名, this._draggingY本来就应该有正负
-	 * 6, 改变了_setIconRun方法, 使用raf不断累减icon的角度来实现滚动, 控制滚动速度的方法是监听时间变化, 与配置的滚动速度来设icon角度// okay
-	* */
+	require('../cssProp/cssProp.js');
+
+	var gadget = jQuery.fn.gadget;
 
 	var Refresh = module.exports = function(wrapper, config){
 		this.initialize(wrapper, config);
@@ -31,7 +22,7 @@ define(function (require, exports, module) {
 			this._calcRuns();
 
 			// 绑定事件
-			this._$container.on($.fn._touchStart, $.proxy(this._onTouchStart, this));
+			this._$container.onUiStart($.proxy(this._onTouchStart, this));
 		},
 
 		_defaultConfig: {
@@ -85,11 +76,7 @@ define(function (require, exports, module) {
 
 			this._wrapperH = $wrapper.outerHeight();
 
-			if(this._config.containerSelector){
-				this._$container = $wrapper.find(this._config.containerSelector);
-			}else{
-				this._$container = $wrapper.children().eq(0);
-			}
+			this._$container = $wrapper.children().eq(0);
 
 			// 给内容添加一个外框作为scroll的容器
 			this._$container.wrap('<div>');
@@ -153,8 +140,8 @@ define(function (require, exports, module) {
 			// 计算初始点击时, 离到达底部的拖拽距离
 			this._footerDragDistance = this._$wrapper[0].scrollHeight - this._$wrapper[0].clientHeight - this._startScrollTop;
 			// 绑定事件
-			this._$container.on($.fn._touchMove, $.proxy(this._onTouchMove, this));
-			this._$container.on($.fn._touchEnd, $.proxy(this._onTouchEnd, this));
+			this._$container.onUiProcess($.proxy(this._onTouchMove, this));
+			this._$container.onUiStop($.proxy(this._onTouchEnd, this));
 		},
 
 		_onTouchMove: function(e) {
@@ -189,7 +176,9 @@ define(function (require, exports, module) {
 
 		_onTouchEnd: function(){
 			var _this = this;//console.log('_onTouchEnd _status =', this._status);
-			this._$container.off($.fn._touchMove + " " + $.fn._touchEnd);
+			this._$container.offUiProcess();
+			this._$container.offUiStop();
+
 			this._draggingIcon = false;
 
 			if(this._status == this.STATUS_TRIGGER_PULL_DOWN){
@@ -233,9 +222,9 @@ define(function (require, exports, module) {
 
 				var iconDeg = _this._iconDeg - rotateDeg;
 
-				_this._functionIconTransform(_this._iconPosY, iconDeg);
+				_this._funcIconTransform(_this._iconPosY, iconDeg);
 
-				$.fn.requestAnimationFrame(IconRun)
+				gadget.rAF(IconRun);
 			}());
 		},
 
@@ -254,6 +243,7 @@ define(function (require, exports, module) {
 
 			if(this._status == this.STATUS_PULLING_DOWN || this._status == this.STATUS_PULLING_UP){
 				// 情况是中途回滚
+				console.log('情况是中途回滚', this._iconDeg);
 				resetDuration = this._iconDeg / 360 * this._circleDuration;
 				rotateDeg = 0;
 			} else {
@@ -263,16 +253,16 @@ define(function (require, exports, module) {
 			}
 
 			// 设动画时间
-			this._functionIconTransition(resetDuration);
+			this._funcIconTransition(resetDuration);
 			// 执行回滚
-			this._functionIconTransform(0, rotateDeg);
+			this._funcIconTransform(0, rotateDeg);
 
 			setTimeout(function(){
 				// 设icon的css过渡都为0, 表示取消动画
 				// 设动画时间
-				_this._functionIconTransition(0);
+				_this._funcIconTransition(0);
 				// 执行回滚
-				_this._functionIconTransform(0, 0);
+				_this._funcIconTransform(0, 0);
 
 				_this._getFuncIcon(0);
 				if(options && options.callback)options.callback();
@@ -366,7 +356,7 @@ define(function (require, exports, module) {
 				// 选择作用的icon
 				this._getFuncIcon(this._status);
 				// 清空过渡动画
-				this._functionIconTransition(0);
+				this._funcIconTransition(0);
 			}
 
 			var _this = this;
@@ -391,9 +381,9 @@ define(function (require, exports, module) {
 					}
 				}
 
-				_this._functionIconTransform(_this._saveData.dragY, _this._saveData.deg);
+				_this._funcIconTransform(_this._saveData.dragY, _this._saveData.deg);
 
-				$.fn.requestAnimationFrame(rafDraggingIcon);
+				gadget.rAF(rafDraggingIcon);
 			}());
 		},
 
@@ -401,10 +391,7 @@ define(function (require, exports, module) {
 		/*
 		* icon的位置与旋转角度设置
 		* */
-		_functionIconTransform: function(distance, rotateDeg){
-
-			var posProps = {};
-			
+		_funcIconTransform: function(distance, rotateDeg){
 			// 记录
 			this._iconPosY = distance;
 			this._iconDeg = rotateDeg;
@@ -412,17 +399,17 @@ define(function (require, exports, module) {
 			// 若是footIcon, 调整为反方向的位移
 			if(this._mode == this.STATUS_PULLING_UP && distance > 0){distance = -distance}
 
-			posProps[$.fn._animType] = "translate3D(0, " + distance + "px, 0) rotate(" + rotateDeg + "deg)"; //console.log(posProps);
-
-			this._$funcIcon.css(posProps);
+			this._$funcIcon.transform({
+				pos:[0, distance, 0],
+				rotate: {deg:rotateDeg}
+			});
 		},
 
-		_functionIconTransition: function(duration){
-			var transition = {};
-
-			transition[$.fn._transitionType] = $.fn._transformType + ' ' + duration + 'ms linear';//console.log(transition);
-
-			this._$funcIcon.css(transition);
+		_funcIconTransition: function(duration){
+			this._$funcIcon.transition({
+				duration: duration,
+				timing: 'linear'
+			});
 		},
 
 		/**
@@ -434,7 +421,7 @@ define(function (require, exports, module) {
 		triggerRefresh: function(){
 			this._status = this.STATUS_TRIGGER_PULL_DOWN;
 			this._getFuncIcon(this.STATUS_PULLING_DOWN);
-			this._functionIconTransform(this._config.triggerOffset, 0);
+			this._funcIconTransform(this._config.triggerOffset, 0);
 			this._setIconRun();
 			this._refreshData();
 		},
